@@ -31,3 +31,8 @@ packages = ["yostlabs"]
 [tool.hatch.build.targets.wheel.force-include]
 "assets/fonts" = "yostlabs/graphics/fonts"
 "assets/models" = "yostlabs/graphics/models"
+
+[project.urls]
+Homepage = "https://yostlabs.com/"
+Repository = "https://github.com/YostLabs/YL-PyGraphicsAPI"
+Issues = "https://github.com/YostLabs/YL-PyGraphicsAPI/issues"
