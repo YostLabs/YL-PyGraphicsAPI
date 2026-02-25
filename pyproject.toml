@@ -9,7 +9,6 @@ description = "3D graphics engine with OpenGL scene graph, rendering primitives,
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "dearpygui>=2.1.0",
     "freetype-py>=2.5.1",
     "glfw>=2.10.0",
     "PyOpenGL>=3.1.10",
