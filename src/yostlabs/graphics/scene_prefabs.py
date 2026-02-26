@@ -106,12 +106,10 @@ class OrientationScene(CameraScene):
         self.axes = LabeledTriAxesObject("Axes", font=font)
         model.add_child(self.axes)
 
-        #Automatically scale model objects to fit the space. If not a model object,
-        #then user should call scale_model_to_view_space manually with an appropriate size for non-model objects.
-        if isinstance(model, ModelObject):
-            bmin, bmax = model.model.get_global_bounding_box()
-            max_extent = max(max(abs(bmin)), max(abs(bmax)))
-            self.scale_model_to_view_space(max_extent)
+        #Automatically scale model objects to fit the space if possible.
+        try:
+            self.scale_model_to_view_space(base_model_max_extent=None)
+        except: pass
 
         # Scale axes inversely to model's scale to prevent model scaling from affecting the axes
         self.update_axes_scale()
@@ -123,7 +121,21 @@ class OrientationScene(CameraScene):
         self._initial_position = self.camera.position.copy()
         self._initial_rotation = self.camera.rotation.copy()
         
-    def scale_model_to_view_space(self, base_model_max_extent=0.5, modify_original_scale=True):
+    def set_model(self, model: GameObject) -> None:
+        """Set the model for the scene and add it as a child."""
+        self.remove_child(self.model)
+        self.model.remove_child(self.axes)
+
+        self.model = model
+        self.add_child(model)
+        model.add_child(self.axes)
+
+        try:
+            self.scale_model_to_view_space(base_model_max_extent=None)
+        except: pass
+            
+
+    def scale_model_to_view_space(self, base_model_max_extent: None|ModelObject|float=None, modify_original_scale=True):
         """
         Scales the model to fit inside a cube with sides of length 1 unit, centered at the origin. 
         The scaling is uniform and based on the largest dimension of the model's bounding box.
@@ -135,7 +147,23 @@ class OrientationScene(CameraScene):
         is called, then the scene will first uniformly scale the model so that its largest dimension
         is 1 unit, and then apply the original scale on top of that.
         """
-        original_scale = self.model.scale
+        compute_extent = False
+        model = self.model
+        if base_model_max_extent is None:
+            if not isinstance(self.model, ModelObject):
+                raise ValueError("base_model_max_extent must be provided for non-ModelObject instances.")
+            model = self.model
+            compute_extent = True
+        elif isinstance(base_model_max_extent, ModelObject):
+            model = base_model_max_extent
+            compute_extent = True
+        
+        if compute_extent:
+            bmin, bmax = model.model.get_global_bounding_box()
+            base_model_max_extent = max(max(abs(bmin)), max(abs(bmax)))
+            print("Base Model Extent:", base_model_max_extent)
+        
+        original_scale = model.scale
         NEW_MAX_EXTENT = 0.5
         self.model.set_scale(NEW_MAX_EXTENT / base_model_max_extent)
         if modify_original_scale:
