@@ -68,12 +68,12 @@ dpg.create_viewport(width=TEXTURE_WIDTH+33, height=TEXTURE_HEIGHT+55+23) #With p
 
 with dpg.window() as primary_window:
     euler_sliders = dpg.add_slider_floatx(size=3, clamped=True, min_value=-180, max_value=180, label=f"Angles {euler_str.upper()}")
-    #dpg_scene.createDpgTexture() creates the internal DPG texture used by the image.
+    #dpg_scene.create_dpg_texture() creates the internal DPG texture used by the image.
     #It must be called after dpg.create_context() and before adding the image to the window.
-    #If displaying the texture in multiple places, only call createDpgTexture() once and use scene.get_dpg_texture()
-    #to obtain the same texture object for use elsewhere. Repeated calls to createDpgTexture() will create a memory leak
+    #If displaying the texture in multiple places, only call create_dpg_texture() once and use scene.get_dpg_texture()
+    #to obtain the same texture object for use elsewhere. Repeated calls to create_dpg_texture() will create a memory leak
     #if not manually managed.
-    dpg.add_image(dpg_scene.createDpgTexture(), width=dpg_scene.texture_width, height=dpg_scene.texture_height)
+    dpg.add_image(dpg_scene.create_dpg_texture(), width=dpg_scene.texture_width, height=dpg_scene.texture_height)
 
 dpg.set_primary_window(primary_window, True)
 
