@@ -40,7 +40,7 @@ class DpgScene:
         dpg_scene.update_dpg_texture(my_custom_texture)
     """
     
-    def __init__(self, texture_width: int, texture_height: int, scene: Scene = None, name: str = "DpgScene"):
+    def __init__(self, texture_width: int, texture_height: int, scene: Scene = None, name: str = "DpgScene", renderer: TextureRenderer = None):
         """
         Initialize a DPG scene with texture rendering capabilities.
         
@@ -49,21 +49,31 @@ class DpgScene:
             texture_height: Height of the render texture
             scene: Optional Scene object to wrap. If None, creates a new Scene.
             name: Scene name (only used if scene is None)
+            renderer: Optional TextureRenderer to prevent automatic creation of a texture renderer.
+            This is can be used to optimize for performance where creating lots of duplicate TextureRenderers
+            is costly.
         """
         # Create or use provided scene
         self.scene = scene if scene is not None else Scene(name)
         
         self.texture_width = texture_width
         self.texture_height = texture_height
-        
+
         # Create texture renderer
-        self.renderer = TextureRenderer(texture_width, texture_height)
+        self.renderer = renderer or TextureRenderer(texture_width, texture_height)
+        self.__owns_renderer = (renderer is None)
         
         # DPG texture will be created later via createDpgTexture()
+        self.__owns_texture = True
+        self.texture_registry = None
         self.dpg_raw_texture = None
         self._cached_texture_data = None
+
+        #Note: The __owns_renderer/texture are used to determine what this scene cleans up on deletion
+        #The user can call claim_render and claim_texture to prevent those from being cleaned up on
+        #destroy, making the user responsible for them
     
-    def createDpgTexture(self):
+    def create_dpg_texture(self):
         """
         Create the DPG texture registry and raw texture.
         Must be called after dpg.create_context().
@@ -71,15 +81,32 @@ class DpgScene:
         Returns:
             DPG texture ID
         """
-        with dpg.texture_registry():
-            self.dpg_raw_texture = dpg.add_raw_texture(
-                width=self.texture_width,
-                height=self.texture_height,
-                default_value=np.zeros(self.texture_width * self.texture_height * 4, dtype=np.float32),
-                format=dpg.mvFormat_Float_rgba
-            )
+        if self.dpg_raw_texture is None:
+            with dpg.texture_registry() as self.texture_registry:
+                self.dpg_raw_texture = dpg.add_raw_texture(
+                    width=self.texture_width,
+                    height=self.texture_height,
+                    default_value=np.zeros(self.texture_width * self.texture_height * 4, dtype=np.float32),
+                    format=dpg.mvFormat_Float_rgba
+                )
         return self.dpg_raw_texture
-    
+
+    def claim_texture(self):
+        """
+        This claims both the texture and the registry
+        """
+        self.__owns_texture = False
+
+    def claim_renderer(self):
+        self.__owns_renderer = False
+
+    def scale_to_image(self, image):
+        """
+        Given a dearpygui image, modify perspective to prevent strecthing when rendering
+        """
+        width, height = dpg.get_item_rect_size(image)
+        self.camera.set_perspective(aspect_ratio=width/height)
+
     def render(self, shader_program: int = None, parent_matrix: np.ndarray = None, *, scene_context: SceneContext = None) -> None:
         """
         Render the scene to the internal texture.
@@ -117,6 +144,8 @@ class DpgScene:
         Args:
             dpg_texture_id: DearPyGui texture ID to update (optional).
                           If None, updates the internal dpg texture.
+            scale_image: A DearPyGui image that if supplied, the rendering
+            will automatically scale the perspective to prevent stretching.
         """
         if dpg_texture_id is None:
             dpg_texture_id = self.dpg_raw_texture
@@ -141,9 +170,14 @@ class DpgScene:
     
     def destroy(self) -> None:
         """Clean up resources including the texture renderer."""
-        if self.renderer is not None:
+        if self.renderer is not None and self.__owns_renderer:
             self.renderer.destroy()
             self.renderer = None
+        if self.dpg_raw_texture is not None and self.__owns_texture:
+            dpg.delete_item(self.dpg_raw_texture)
+            dpg.delete_item(self.texture_registry)
+            self.dpg_raw_texture = None
+            self.texture_registry = None
         self.scene.destroy()
     
     # Delegate all Scene methods to the wrapped scene

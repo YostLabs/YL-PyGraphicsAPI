@@ -7,7 +7,7 @@ class OBJ:
     """OBJ loader that uses VAO/VBO for rendering."""
     
     @classmethod
-    def loadMaterial(cls, filename):
+    def load_material(cls, filename):
         contents = {}
         mtl = None
         dirname = os.path.dirname(filename)
@@ -81,7 +81,7 @@ class OBJ:
             elif values[0] in ('usemtl', 'usemat'):
                 material = ' '.join(values[1:])
             elif values[0] == 'mtllib':
-                self.mtl = self.loadMaterial(os.path.join(dirname, ' '.join(values[1:])))
+                self.mtl = self.load_material(os.path.join(dirname, ' '.join(values[1:])))
             elif values[0] == 'f':
                 face = []
                 texcoords = []
