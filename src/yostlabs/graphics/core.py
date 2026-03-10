@@ -276,7 +276,7 @@ class Camera(GameObject):
     
     def apply_viewport(self) -> None:
         """Apply this camera's viewport to OpenGL."""
-        glViewport(self.viewport_x, self.viewport_y, self.viewport_width, self.viewport_height)
+        GL_Context.current_surface.apply_viewport(self.viewport_x, self.viewport_y, self.viewport_width, self.viewport_height)
     
     def set_perspective(self, fov: float = None, aspect_ratio: float = None, near: float = None, far: float = None) -> None:
         """
@@ -732,7 +732,7 @@ class HudOverlay:
 
         # Enable scissor test to clip rendering to overlay region
         glEnable(GL_SCISSOR_TEST)
-        glScissor(*self.viewport)
+        GL_Context.current_surface.apply_scissor(*self.viewport)
         
         # Render the scene, only clearing depth buffer (not color) for transparency
         clear_bits = GL_DEPTH_BUFFER_BIT

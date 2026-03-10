@@ -1,6 +1,7 @@
 import glfw
 from OpenGL.GL import *
 from OpenGL.GL import shaders
+from abc import ABC, abstractmethod
 
 from yostlabs.graphics.font import TextRenderer, Font
 from yostlabs.graphics.resources import get_font_path
@@ -12,6 +13,52 @@ from yostlabs.math.axes import AxisOrder
 #If the axis order of the sensor was set to XY-Z, no additional quat modification would be necessary.
 GL_AXIS_ORDER = AxisOrder("xy-z")
 
+#A GL_ContextWindow is used to scale logical units into actual pixel values
+#for use in OpenGL. This is primarily required due to HiDPI displays where
+#the logical window size may differ from the actual framebuffer size.
+#Also, if rendering directly to a texture for use in a separate program (such as
+#DearPyGui), different scales may be required to fit the rendered output.
+class GL_ContextSurface(ABC):
+
+    @abstractmethod
+    def apply_viewport(self, viewport_x, viewport_y, viewport_width, viewport_height):
+        """Apply the given viewport to OpenGL."""
+        raise NotImplementedError
+    
+    @abstractmethod
+    def apply_scissor(self, scissor_x, scissor_y, scissor_width, scissor_height):
+        """Apply the given scissor box to OpenGL."""
+        raise NotImplementedError
+
+class GL_ContextWindowGLFW(GL_ContextSurface):
+
+    def __init__(self, window):
+        self.window = window
+
+    def apply_viewport(self, viewport_x, viewport_y, viewport_width, viewport_height):
+        """Apply the given viewport to OpenGL."""
+        x_scale, y_scale = glfw.get_window_content_scale(self.window)
+        glViewport(int(viewport_x * x_scale), int(viewport_y * y_scale), int(viewport_width * x_scale), int(viewport_height * y_scale))
+    
+    def apply_scissor(self, scissor_x, scissor_y, scissor_width, scissor_height):
+        """Apply the given scissor box to OpenGL."""
+        x_scale, y_scale = glfw.get_window_content_scale(self.window)
+        glScissor(int(scissor_x * x_scale), int(scissor_y * y_scale), int(scissor_width * x_scale), int(scissor_height * y_scale))
+
+class GL_ContextWindowFixed(GL_ContextSurface):
+
+    def __init__(self, x_scale: float, y_scale: float):
+        self.x_scale = x_scale
+        self.y_scale = y_scale
+
+    def apply_viewport(self, viewport_x, viewport_y, viewport_width, viewport_height):
+        """Apply the given viewport to OpenGL."""
+        glViewport(int(viewport_x * self.x_scale), int(viewport_y * self.y_scale), int(viewport_width * self.x_scale), int(viewport_height * self.y_scale))
+
+    def apply_scissor(self, scissor_x, scissor_y, scissor_width, scissor_height):
+        """Apply the given scissor box to OpenGL."""
+        glScissor(int(scissor_x * self.x_scale), int(scissor_y * self.y_scale), int(scissor_width * self.x_scale), int(scissor_height * self.y_scale))
+
 class GL_Context:
     """OpenGL 3.3+ context"""
     initialized = False
@@ -22,6 +69,8 @@ class GL_Context:
     text_renderer = None
     default_font = None
     window = None  # Store GLFW window reference
+
+    default_surface = None
 
     @classmethod
     def init(cls, window_width: int = 200, window_height: int = 200, window_title: str = "OpenGL Renderer", visible: bool = False):
@@ -52,6 +101,11 @@ class GL_Context:
             print("Glfw window can't be created")
             exit()
         glfw.make_context_current(cls.window)
+
+        if visible:
+            cls.current_surface = GL_ContextWindowGLFW(cls.window)
+        else:
+            cls.current_surface = GL_ContextWindowFixed(1.0, 1.0)
 
         # Load shader programs
         cls._load_shaders()
@@ -96,8 +150,9 @@ class GL_Context:
         vertex_shader = shaders.compileShader(vertex_source, GL_VERTEX_SHADER)
         fragment_shader = shaders.compileShader(fragment_source, GL_FRAGMENT_SHADER)
         
-        # Link program
-        cls.shader_program = shaders.compileProgram(vertex_shader, fragment_shader)
+        # On macOS core profile, eager validation can fail before any VAO is bound.
+        # Link here and let runtime state be validated naturally during draw calls.
+        cls.shader_program = shaders.compileProgram(vertex_shader, fragment_shader, validate=False)
 
     @classmethod
     def _load_texture_shaders(cls):
@@ -114,8 +169,7 @@ class GL_Context:
         vertex_shader = shaders.compileShader(vertex_source, GL_VERTEX_SHADER)
         fragment_shader = shaders.compileShader(fragment_source, GL_FRAGMENT_SHADER)
         
-        # Link program
-        cls.texture_shader_program = shaders.compileProgram(vertex_shader, fragment_shader)
+        cls.texture_shader_program = shaders.compileProgram(vertex_shader, fragment_shader, validate=False)
 
     @classmethod
     def _load_arrow_shaders(cls):
@@ -135,8 +189,7 @@ class GL_Context:
         geometry_shader = shaders.compileShader(geometry_source, GL_GEOMETRY_SHADER)
         fragment_shader = shaders.compileShader(fragment_source, GL_FRAGMENT_SHADER)
         
-        # Link program
-        cls.arrow_shader_program = shaders.compileProgram(vertex_shader, geometry_shader, fragment_shader)
+        cls.arrow_shader_program = shaders.compileProgram(vertex_shader, geometry_shader, fragment_shader, validate=False)
 
     @classmethod
     def _create_texture_quad(cls):

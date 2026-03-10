@@ -96,7 +96,8 @@ void main()
     def __init__(self):
         self.textProgram = shaders.compileProgram(
             shaders.compileShader(TextRenderer.VERTEX_SOURCE, GL_VERTEX_SHADER),
-            shaders.compileShader(TextRenderer.FRAG_SOURCE, GL_FRAGMENT_SHADER)
+            shaders.compileShader(TextRenderer.FRAG_SOURCE, GL_FRAGMENT_SHADER),
+            validate=False
         )
 
         # configure VAO/VBO for texture quads
