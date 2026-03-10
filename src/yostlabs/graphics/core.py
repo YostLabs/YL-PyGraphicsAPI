@@ -6,6 +6,7 @@ Provides a scene graph with parent-child relationships and local/world transform
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Union, Sequence
+from pathlib import Path
 
 from OpenGL.GL import *
 import ctypes
@@ -393,21 +394,24 @@ class ModelObject(GameObject):
     # Class-level cache for loaded models
     _model_cache: Dict[str, OBJ] = {}
     
-    def __init__(self, name: str = "Model", model_path: str = None):
+    def __init__(self, model: str|Path|OBJ = None, name: str = "Model"):
         """
         Initialize model object.
         
         Args:
+            model: OBJ or Path/String
             name: Object name
-            model_path: Path to the OBJ model file
         """
         super().__init__(name)
         self.model: Optional[OBJ] = None
-        self.model_path = model_path
+        self.model_path = None
         self.model_alpha = 1.0  # Alpha transparency (0.0-1.0)
         
-        if model_path is not None:
-            self.load_model(model_path)
+        if isinstance(model, str) or isinstance(model, Path):
+            self.model_path = model
+            self.load_model(self.model_path)
+        elif isinstance(model, OBJ):
+            self.model = model
     
     def load_model(self, model_path: str) -> None:
         """
@@ -705,6 +709,8 @@ class HudOverlay:
         self.scene = scene
         self.viewport = [x, y, width, height]
 
+        self.visible = True
+
         # Configure camera viewport to match HUD if possible
         if auto_camera_viewport and self.scene.camera is not None:
             self.scene.camera.set_viewport(
@@ -722,6 +728,8 @@ class HudOverlay:
             shader_program: OpenGL shader program to use. If None, use default shader from GL_Context.
         """
         
+        if not self.visible: return
+
         # Enable scissor test to clip rendering to overlay region
         glEnable(GL_SCISSOR_TEST)
         glScissor(*self.viewport)
@@ -743,6 +751,9 @@ class HudOverlay:
     def set_size(self, width: int, height: int) -> None:
         """Update the overlay size."""
         self.viewport = (self.viewport[0], self.viewport[1], width, height)
+
+    def set_visible(self, visible: bool):
+        self.visible = visible
 
 
 class ArrowObject(GameObject):
