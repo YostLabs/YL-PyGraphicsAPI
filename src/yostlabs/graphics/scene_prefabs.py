@@ -233,7 +233,7 @@ class OrientationScene(CameraScene):
         """
         if isinstance(order, str):
             order = AxisOrder(order)
-        self.axis_order = self.axis_order
+        self.axis_order = order
         self.axes.set_axis_order(order)
         self.orientation_indicator.set_axis_order(order)
 
