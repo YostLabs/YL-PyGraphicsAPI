@@ -3,6 +3,7 @@ Pre-built Scene classes with common configurations.
 Contains Scene subclasses that are already partially set up for common use cases.
 """
 
+from yostlabs.graphics.context import GL_AXIS_ORDER
 from yostlabs.graphics.core import Scene, Camera, Font, GameObject, ModelObject, HudOverlay
 from yostlabs.graphics.prefabs import LabeledTriAxesObject
 from yostlabs.graphics.scene_components import CameraMover
@@ -86,6 +87,8 @@ class OrientationScene(CameraScene):
         """
         super().__init__(width, height, name)
 
+        self.axis_order = AxisOrder("xyz")
+
         # Store viewport dimensions for camera controls
         self.viewport_width = width
         self.viewport_height = height
@@ -120,7 +123,10 @@ class OrientationScene(CameraScene):
         # Store initial camera state for reset
         self._initial_position = self.camera.position.copy()
         self._initial_rotation = self.camera.rotation.copy()
-        
+
+    def set_model_rotation_quat(self, quaternion: np.ndarray):
+        self.model.set_rotation_quat(self.axis_order.swap_to(GL_AXIS_ORDER, quaternion, rotational=True))
+
     def set_model(self, model: GameObject) -> None:
         """Set the model for the scene and add it as a child."""
         self.remove_child(self.model)
@@ -225,6 +231,9 @@ class OrientationScene(CameraScene):
             order: List of 3 integers [0-2] specifying axis mapping.
                   order[i] = j means original axis i goes to position j.
         """
+        if isinstance(order, str):
+            order = AxisOrder(order)
+        self.axis_order = self.axis_order
         self.axes.set_axis_order(order)
         self.orientation_indicator.set_axis_order(order)
 
