@@ -394,7 +394,7 @@ class ModelObject(GameObject):
     # Class-level cache for loaded models
     _model_cache: Dict[str, OBJ] = {}
     
-    def __init__(self, model: str|Path|OBJ = None, name: str = "Model"):
+    def __init__(self, name: str = "Model",  model: str|Path|OBJ = None):
         """
         Initialize model object.
         
