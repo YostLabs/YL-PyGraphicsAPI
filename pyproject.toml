@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yostlabs-graphics"
-version = "2026.3.10"
+version = "2026.3.16"
 description = "3D graphics engine with OpenGL scene graph, rendering primitives, and DearPyGui integration"
 readme = "README.md"
 requires-python = ">=3.10"
