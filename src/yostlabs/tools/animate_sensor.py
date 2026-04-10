@@ -122,7 +122,7 @@ def animate_sensor(sensor: ThreespaceSensor = None,
     orientation_scene.set_camera_mover(glfw_camera_mover)
     
     # Get sensor axis order
-    sensor_axis_order_str = sensor.get_settings("axis_order")
+    sensor_axis_order_str = sensor.readAxisOrder()
     SENSOR_AXIS_ORDER = AxisOrder(sensor_axis_order_str)
     orientation_scene.set_axis_order(SENSOR_AXIS_ORDER)
     print(f"Sensor axis order: {sensor_axis_order_str}")

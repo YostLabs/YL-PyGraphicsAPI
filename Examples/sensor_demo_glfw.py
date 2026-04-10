@@ -53,7 +53,7 @@ orientation_scene.set_camera_mover(glfw_camera_mover)
 # SENSOR INFO
 #Auto Detect USB connection
 sensor = ThreespaceSensor()
-SENSOR_AXIS_ORDER = AxisOrder(sensor.get_settings("axis_order"))
+SENSOR_AXIS_ORDER = AxisOrder(sensor.readAxisOrder())
 orientation_scene.set_axis_order(SENSOR_AXIS_ORDER)
 
 # Main render loop
