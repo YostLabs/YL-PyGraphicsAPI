@@ -100,6 +100,8 @@ def animate_sensor(sensor: ThreespaceSensor = None,
         model = ModelObject("EM", resources.get_model_path('EM-3.obj', 'Embedded'))
     elif sensor.sensor_family == tss3_consts.THREESPACE_FAMILY_DATA_LOGGER:
         model = ModelObject("DL", resources.get_model_path('DL-3.obj', 'DataLogger'))
+    elif sensor.sensor_family == tss3_consts.THREESPACE_FAMILY_USB:
+        model = ModelObject("USB", resources.get_model_path('USB-3-Cased.obj', 'USB'))
     else:
         model = ModelObject("EM", resources.get_model_path('EM-3.obj', 'Embedded'))
     
